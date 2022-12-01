@@ -1,0 +1,13 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: github-runners
+spec:
+  replicas: 1
+  template:
+    spec:
+      image: ghcr.io/santhoshnath/github-runner:latest
+      dockerdWithinRunnerContainer: true
+      organization: benzene
+      labels:
+        - benzene-ubuntu
