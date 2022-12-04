@@ -6,6 +6,8 @@ on:
       - "master"
     paths:
       - "Dockerfile"
+      - "Dockerfile-dind"
+      - "Dockerfile-dind-rootless"
 
 concurrency: ${{ github.workflow }}
 
@@ -23,10 +25,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build and push Docker images
-        id: image
+      - name: Build and push runner images
         uses: docker/build-push-action@v3
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: ghcr.io/santhoshnath/github-runner
+          tags: ghcr.io/santhoshnath/github-runner:ubuntu-22.04
+
+      - name: Build and push DinD runner images
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile-dind
+          push: true
+          tags: ghcr.io/santhoshnath/github-runner:ubuntu-20.04-dind
+
+      - name: Build and push DinD rootless runner images
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile-dind-rootless
+          push: true
+          tags: ghcr.io/santhoshnath/github-runner:ubuntu-20.04-dind-rootless

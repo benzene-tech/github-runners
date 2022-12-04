@@ -1,1 +1,1 @@
-FROM summerwind/actions-runner-dind:latest
+FROM summerwind/actions-runner:ubuntu-22.04

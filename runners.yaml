@@ -6,7 +6,7 @@ spec:
   replicas: 1
   template:
     spec:
-      image: ghcr.io/santhoshnath/github-runner:latest
+      image: ghcr.io/santhoshnath/github-runner:ubuntu-22.04
       dockerdWithinRunnerContainer: true
       organization: benzene
       labels:
