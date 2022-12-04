@@ -1,13 +1,33 @@
 apiVersion: actions.summerwind.dev/v1alpha1
 kind: RunnerDeployment
 metadata:
-  name: github-runners
+  name: github-runner
 spec:
-  replicas: 1
   template:
     spec:
       image: ghcr.io/santhoshnath/github-runner:ubuntu-22.04
-      dockerdWithinRunnerContainer: true
-      organization: benzene
+      organization: benzene-tech
       labels:
         - benzene-ubuntu
+      containers:
+        - name: runner
+          securityContext:
+            privileged: false
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: github-runner
+spec:
+  minReplicas: 1
+  maxReplicas: 5
+  scaleDownDelaySecondsAfterScaleOut: 300
+  scaleTargetRef:
+    kind: RunnerDeployment
+    name: github-runner
+  metrics:
+    - type: PercentageRunnersBusy
+      scaleUpThreshold: '0.75'
+      scaleDownThreshold: '0.25'
+      scaleUpFactor: '2'
+      scaleDownFactor: '0.5'

@@ -1,8 +1,12 @@
 .idea/
+scripts/
 
 ### Terraform template
 # Local .terraform directories
 **/.terraform/*
+
+# Lock files
+**/.terraform.lock.hcl
 
 # .tfstate files
 *.tfstate

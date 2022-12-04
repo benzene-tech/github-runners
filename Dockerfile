@@ -1,1 +1,3 @@
-FROM summerwind/actions-runner:ubuntu-22.04
+ARG TAG
+
+FROM summerwind/actions-runner:$TAG
