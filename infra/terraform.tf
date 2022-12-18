@@ -3,7 +3,7 @@ terraform {
 
   cloud {
     workspaces {
-      name = "GitHub Runners"
+      name = "GitHub_Runners"
     }
   }
 }

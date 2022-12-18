@@ -3,7 +3,7 @@ locals {
 }
 
 module "vpc" {
-  source = "github.com/SanthoshNath/VPC?ref=master"
+  source = "github.com/SanthoshNath/VPC?ref=v1.0"
 
   name_prefix    = local.name_prefix
   vpc_cidr_block = var.vpc_cidr_block
@@ -18,7 +18,7 @@ module "vpc" {
 }
 
 module "eks" {
-  source = "github.com/SanthoshNath/EKS?ref=master"
+  source = "github.com/SanthoshNath/EKS?ref=v1.0"
 
   vpc_id      = module.vpc.vpc_id
   name_prefix = local.name_prefix
@@ -33,6 +33,9 @@ module "eks" {
       selectors = [
         {
           namespace = "kube-system"
+        },
+        {
+          namespace = "cert-manager"
         }
       ]
     },

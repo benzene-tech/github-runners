@@ -1,0 +1,163 @@
+name: Infrastructure
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - ".github/workflows/infrastructure.yml"
+      - "infra/**"
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - ".github/workflows/infrastructure.yml"
+      - "infra/**"
+
+concurrency: infrastructure-${{ github.ref }}
+defaults:
+  run:
+    working-directory: infra
+
+jobs:
+  Validate:
+    runs-on: ubuntu-latest
+    env:
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Check format
+        run: terraform fmt -recursive -check
+
+      - name: Restore cache
+        id: restore
+        uses: actions/cache@v3
+        with:
+          path: |
+            infra/.terraform/
+            infra/.terraform.lock.hcl
+          key: terraform-${{ github.sha }}
+
+      - name: Init
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: terraform init
+
+      - name: Validate
+        run: terraform validate
+
+  Plan:
+    runs-on: ubuntu-latest
+    needs: Validate
+    env:
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Restore cache
+        id: restore
+        uses: actions/cache@v3
+        with:
+          path: |
+            infra/.terraform/
+            infra/.terraform.lock.hcl
+          key: terraform-${{ github.sha }}
+
+      - name: Init
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: terraform init
+
+      - name: Plan
+        id: plan
+        run: terraform plan -input=false
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request' && always()
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            // 1. Retrieve existing bot comments for the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Terraform Plan')
+            })
+            
+            // 2. Prepare format of the comment
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            })
+            const { data: job } = await github.rest.actions.getJobForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              job_id: jobs.jobs.filter(job => job.name == 'Plan')[0].id
+            })
+            
+            const output = `#### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            
+            [Show Plan](${job.html_url}#step:${job.steps.filter(step => step.name == 'Terraform Plan')[0].number}:1)
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            
+            // 3. If we have a comment, update it, otherwise create a new one
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }
+
+  Apply:
+    runs-on: ubuntu-latest
+    environment: GitHub
+    needs: Plan
+    env:
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Restore cache
+        id: restore
+        uses: actions/cache@v3
+        with:
+          path: |
+            infra/.terraform/
+            infra/.terraform.lock.hcl
+          key: terraform-${{ github.sha }}
+
+      - name: Init
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: terraform init
+
+      - name: Apply
+        run: terraform apply -auto-approve -input=false
