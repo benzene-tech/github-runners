@@ -7,14 +7,6 @@ module "vpc" {
 
   name_prefix    = local.name_prefix
   vpc_cidr_block = var.vpc_cidr_block
-  additional_public_subnet_tags = {
-    "kubernetes.io/cluster/${local.name_prefix}" = "shared"
-    "kubernetes.io/role/elb"                     = "1"
-  }
-  additional_private_subnet_tags = {
-    "kubernetes.io/cluster/${local.name_prefix}" = "shared"
-    "kubernetes.io/role/internal-elb"            = "1"
-  }
 }
 
 module "eks" {

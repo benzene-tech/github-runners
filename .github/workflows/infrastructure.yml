@@ -37,8 +37,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            infra/.terraform/
-            infra/.terraform.lock.hcl
+            **/.terraform/
+            **/.terraform.lock.hcl
           key: terraform-${{ github.sha }}
 
       - name: Plan
@@ -67,8 +67,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            infra/.terraform/
-            infra/.terraform.lock.hcl
+            **/.terraform/
+            **/.terraform.lock.hcl
           key: terraform-${{ github.sha }}
 
       - name: Init
