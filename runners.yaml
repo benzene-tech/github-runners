@@ -1,7 +1,7 @@
 apiVersion: actions.summerwind.dev/v1alpha1
 kind: RunnerDeployment
 metadata:
-  name: github-runner
+  name: github-runners
 spec:
   template:
     spec:
@@ -17,14 +17,14 @@ spec:
 apiVersion: actions.summerwind.dev/v1alpha1
 kind: HorizontalRunnerAutoscaler
 metadata:
-  name: github-runner
+  name: github-runners
 spec:
   minReplicas: 1
   maxReplicas: 5
   scaleDownDelaySecondsAfterScaleOut: 300
   scaleTargetRef:
     kind: RunnerDeployment
-    name: github-runner
+    name: github-runners
   metrics:
     - type: PercentageRunnersBusy
       scaleUpThreshold: '0.75'

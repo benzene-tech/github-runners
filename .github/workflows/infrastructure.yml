@@ -49,7 +49,7 @@ jobs:
 
   Apply:
     runs-on: ubuntu-latest
-    environment: GitHub
+    environment: Infra
     needs: Plan
     env:
       TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}

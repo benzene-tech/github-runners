@@ -2,6 +2,10 @@ ARG TAG
 
 FROM ghcr.io/actions/actions-runner-controller/actions-runner:$TAG
 
-COPY --from=docker/buildx-bin /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+WORKDIR /home/runner
 
-RUN docker buildx install
+COPY configure-runners.sh ./
+
+RUN bash configure-runners.sh
+
+RUN rm -f configure-runners.sh
