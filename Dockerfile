@@ -2,10 +2,10 @@ ARG TAG
 
 FROM ghcr.io/actions/actions-runner-controller/actions-runner:$TAG
 
-WORKDIR /home/runner
+USER root
 
-COPY configure-runners.sh ./
+# Update APT
+RUN apt-get update -y
 
-RUN bash configure-runners.sh
-
-RUN rm -f configure-runners.sh
+# Install APT packages
+RUN apt-get install -y wget zstd

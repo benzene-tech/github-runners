@@ -7,7 +7,6 @@ on:
     paths:
       - ".github/workflows/build.yml"
       - "Dockerfile"
-      - "configure-runners.sh"
 
 concurrency:
   group: build
@@ -33,6 +32,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          platforms: linux/amd64,linux/arm64
 
       - name: Build and push runner image
         uses: docker/build-push-action@v3
@@ -41,8 +42,8 @@ jobs:
           build-args: |
             TAG=${{ matrix.tag }}
           push: true
+          pull: true
           tags: ghcr.io/santhoshnath/github-runner:${{ matrix.tag }}
           cache-to: type=gha,ignore-error=true
           cache-from: type=gha
-          platforms: |
-            linux/amd64
+          platforms: linux/amd64,linux/arm64

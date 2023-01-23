@@ -9,6 +9,7 @@ spec:
       organization: benzene-tech
       labels:
         - benzene-ubuntu
+      workDir: /home/runner/work
       containers:
         - name: runner
           securityContext:
