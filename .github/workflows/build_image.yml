@@ -5,11 +5,17 @@ on:
     branches:
       - "master"
     paths:
-      - ".github/workflows/build.yml"
+      - ".github/workflows/build_image.yml"
+      - "Dockerfile"
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - ".github/workflows/build_image.yml"
       - "Dockerfile"
 
 concurrency:
-  group: build
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -35,13 +41,13 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
 
-      - name: Build and push runner image
-        uses: docker/build-push-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v4
         with:
           context: .
           build-args: |
             TAG=${{ matrix.tag }}
-          push: true
+          push: ${{ github.event_name == 'push' && 'true' || 'false' }}
           pull: true
           tags: ghcr.io/santhoshnath/github-runner:${{ matrix.tag }}
           cache-to: type=gha,ignore-error=true
