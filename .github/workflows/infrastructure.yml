@@ -28,10 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: hashicorp/setup-terraform@v2
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
       - name: Restore cache
         id: restore
         uses: actions/cache@v3
@@ -45,6 +41,7 @@ jobs:
         uses: SanthoshNath/terraform-plan@v1
         with:
           working_directory: infra
+          terraform_cloud_token: ${{ secrets.TF_API_TOKEN }}
           skip_init: ${{ steps.restore.outputs.cache-hit }}
 
   Apply:
@@ -58,7 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
