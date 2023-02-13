@@ -55,14 +55,15 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.9.0
+        uses: aquasecurity/trivy-action@0.9.1
         with:
           image-ref: ghcr.io/santhoshnath/github-runner:${{ matrix.tag }}
-          format: sarif
-          output: trivy.sarif
+          format: ${{ github.event_name == 'push' && 'sarif' || 'table' }}
+          output: ${{ github.event_name == 'push' && 'trivy.sarif' || '' }}
         continue-on-error: true
 
       - name: Upload Trivy scan results to GitHub Security tab
+        if: github.event_name == 'push'
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: trivy.sarif
