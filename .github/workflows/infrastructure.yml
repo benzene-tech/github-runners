@@ -3,27 +3,23 @@ name: Infrastructure
 on:
   push:
     branches:
-      - "master"
+      - "main"
     paths:
       - ".github/workflows/infrastructure.yml"
       - "infra/**"
   pull_request:
     branches:
-      - "master"
+      - "main"
     paths:
       - ".github/workflows/infrastructure.yml"
       - "infra/**"
+  workflow_dispatch:
 
 concurrency: infrastructure-${{ github.ref }}
-defaults:
-  run:
-    working-directory: infra
 
 jobs:
   Plan:
     runs-on: ubuntu-latest
-    env:
-      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
 
     steps:
       - uses: actions/checkout@v3
@@ -38,7 +34,7 @@ jobs:
           key: terraform-${{ github.sha }}
 
       - name: Plan
-        uses: SanthoshNath/terraform-plan@v1
+        uses: benzene-tech/terraform-plan@v1
         with:
           working_directory: infra
           terraform_cloud_token: ${{ secrets.TF_API_TOKEN }}
@@ -49,8 +45,8 @@ jobs:
     environment: Infra
     needs: Plan
     env:
-      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
-    if: github.event_name == 'push'
+      TF_IN_AUTOMATION: "1"
+    if: github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@v3
@@ -71,7 +67,9 @@ jobs:
 
       - name: Init
         if: steps.restore.outputs.cache-hit != 'true'
+        working-directory: infra
         run: terraform init
 
       - name: Apply
+        working-directory: infra
         run: terraform apply -auto-approve -input=false

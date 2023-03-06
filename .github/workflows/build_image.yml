@@ -1,15 +1,15 @@
-name: Build Runner image
+name: Build GitHub Runner image
 
 on:
   push:
     branches:
-      - "master"
+      - "main"
     paths:
       - ".github/workflows/build_image.yml"
       - "Dockerfile"
   pull_request:
     branches:
-      - "master"
+      - "main"
     paths:
       - ".github/workflows/build_image.yml"
       - "Dockerfile"
@@ -25,6 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         tag: [ ubuntu-22.04 ]
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/github-runner:${{ matrix.tag }}
 
     steps:
       - uses: actions/checkout@v3
@@ -33,7 +35,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ github.token }}
 
       - name: Set up Docker Buildx
@@ -49,18 +51,20 @@ jobs:
             TAG=${{ matrix.tag }}
           push: ${{ github.event_name == 'push' && 'true' || 'false' }}
           pull: true
-          tags: ghcr.io/santhoshnath/github-runner:${{ matrix.tag }}
+          tags: ${{ env.IMAGE_NAME }}
           cache-to: type=gha,ignore-error=true
           cache-from: type=gha
           platforms: linux/amd64,linux/arm64
 
       - name: Run Trivy vulnerability scanner
+        env:
+          TRIVY_USERNAME: ${{ github.repository_owner }}
+          TRIVY_PASSWORD: ${{ github.token }}
         uses: aquasecurity/trivy-action@0.9.1
         with:
-          image-ref: ghcr.io/santhoshnath/github-runner:${{ matrix.tag }}
+          image-ref: ${{ env.IMAGE_NAME }}
           format: ${{ github.event_name == 'push' && 'sarif' || 'table' }}
           output: ${{ github.event_name == 'push' && 'trivy.sarif' || '' }}
-        continue-on-error: true
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.event_name == 'push'

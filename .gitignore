@@ -1,5 +1,5 @@
 .idea/
-scripts/
+.DS_Store
 
 ### Terraform template
 # Local .terraform directories
@@ -39,4 +39,3 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
-

@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      image: ghcr.io/santhoshnath/github-runner:ubuntu-22.04
+      image: ghcr.io/benzene-tech/github-runner:ubuntu-22.04
       organization: benzene-tech
       labels:
         - benzene-ubuntu

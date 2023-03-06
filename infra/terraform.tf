@@ -2,8 +2,10 @@ terraform {
   required_version = ">= 0.12"
 
   cloud {
+    organization = "Benzene"
+
     workspaces {
-      name = "GitHub_Runners"
+      name = "GitHub-Runners"
     }
   }
 }
