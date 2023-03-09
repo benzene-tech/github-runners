@@ -1,0 +1,61 @@
+name: Install GitHub Runners
+
+on:
+  workflow_dispatch:
+
+concurrency: install
+
+jobs:
+  Install:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.GHA_AWS_ROLE }}
+          aws-region: ap-south-1
+
+      - name: Login to EKS cluster
+        run: aws eks update-kubeconfig --name github_runners
+
+      - name: Restart coredns deployment
+        run: |
+          compute_type=$(kubectl get deployment coredns -n kube-system -o json | jq -r '.spec.template.metadata.annotations."eks.amazonaws.com/compute-type"')
+          if [ "$compute_type" == "ec2" ]; then
+            kubectl patch deployment coredns \
+              -n kube-system \
+              --type json \
+              -p='[{"op": "remove", "path": "/spec/template/metadata/annotations/eks.amazonaws.com~1compute-type"}]'
+            kubectl rollout restart deployment coredns -n kube-system
+          fi
+
+      - name: Install cert-manger
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            -n cert-manager --create-namespace \
+            --version v1.11.0 \
+            --set installCRDs=true \
+            --set webhook.securePort=10260 \
+            --wait
+
+      - name: Install Runners
+        run: |
+          helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
+          helm upgrade --install actions-runner-controller actions-runner-controller/actions-runner-controller \
+            -n actions-runner-system --create-namespace \
+            --version v0.22.0 \
+            --set=authSecret.create=true \
+            --set=authSecret.github_app_id=${{ secrets.RUNNER_APP_ID }} \
+            --set=authSecret.github_app_installation_id=${{ secrets.RUNNER_APP_INSTALLATION_ID }} \
+            --set=authSecret.github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
+            --wait
+          
+          kubectl apply -f runners.yaml

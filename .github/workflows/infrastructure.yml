@@ -24,21 +24,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Restore cache
-        id: restore
+      - name: Restore providers
         uses: actions/cache@v3
         with:
           path: |
-            **/.terraform/
-            **/.terraform.lock.hcl
-          key: terraform-${{ github.sha }}
+            **/.terraform/providers
+          key: terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
 
       - name: Plan
         uses: benzene-tech/terraform-plan@v1
         with:
           working_directory: infra
           terraform_cloud_token: ${{ secrets.TF_API_TOKEN }}
-          skip_init: ${{ steps.restore.outputs.cache-hit }}
 
   Apply:
     runs-on: ubuntu-latest
@@ -56,17 +53,14 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Restore cache
-        id: restore
+      - name: Restore providers
         uses: actions/cache@v3
         with:
           path: |
-            **/.terraform/
-            **/.terraform.lock.hcl
-          key: terraform-${{ github.sha }}
+            **/.terraform/providers
+          key: terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
 
       - name: Init
-        if: steps.restore.outputs.cache-hit != 'true'
         working-directory: infra
         run: terraform init
 
