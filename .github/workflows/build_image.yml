@@ -61,7 +61,7 @@ jobs:
         env:
           TRIVY_USERNAME: ${{ github.repository_owner }}
           TRIVY_PASSWORD: ${{ github.token }}
-        uses: aquasecurity/trivy-action@0.9.1
+        uses: aquasecurity/trivy-action@0.9.2
         with:
           image-ref: ${{ env.IMAGE_NAME }}
           format: ${{ github.event_name == 'push' && 'sarif' || 'table' }}
