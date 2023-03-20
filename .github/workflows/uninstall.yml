@@ -28,6 +28,7 @@ jobs:
       - name: Uninstall Runners
         run: |
           kubectl delete -f runners.yaml
+          kubectl delete secret github
           
           helm uninstall actions-runner-controller \
             -n actions-runner-system \
@@ -40,3 +41,5 @@ jobs:
           helm uninstall cert-manager \
             -n cert-manager \
             --wait
+          
+          kubectl delete ns cert-manager

@@ -6,6 +6,8 @@ spec:
   template:
     spec:
       image: ghcr.io/benzene-tech/github-runner:ubuntu-22.04
+      imagePullSecrets:
+        - name: github
       organization: benzene-tech
       labels:
         - benzene-ubuntu

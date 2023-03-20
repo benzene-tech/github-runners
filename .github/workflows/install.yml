@@ -27,7 +27,7 @@ jobs:
 
       - name: Restart coredns deployment
         run: |
-          compute_type=$(kubectl get deployment coredns -n kube-system -o json | jq -r '.spec.template.metadata.annotations."eks.amazonaws.com/compute-type"')
+          compute_type=$(kubectl get deployment coredns -n kube-system -o jsonpath="{.spec.template.metadata.annotations.eks\.amazonaws\.com/compute-type}")
           if [ "$compute_type" == "ec2" ]; then
             kubectl patch deployment coredns \
               -n kube-system \
@@ -58,4 +58,8 @@ jobs:
             --set=authSecret.github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
             --wait
           
+          kubectl create secret docker-registry github \
+            --docker-username=${{ github.repository_owner }} \
+            --docker-password=${{ secrets.GH_PACKAGES_TOKEN }} \
+            --docker-server=ghcr.io
           kubectl apply -f runners.yaml

@@ -42,11 +42,20 @@ module "eks" {
   }
 }
 
-resource "null_resource" "eksctl" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      curl -s -L "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C .
-      ./eksctl create iamidentitymapping --cluster ${module.eks.cluster_name} --region=${var.aws_region} --arn ${sensitive(data.aws_iam_role.iam_identity_mapping.arn)} --group system:masters --username GHA --no-duplicate-arns
-    EOT
+resource "kubernetes_config_map_v1_data" "aws_auth" {
+  count = var.aws_auth_config != null ? 1 : 0
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
   }
+
+  data = {
+    mapRoles = templatefile("aws-auth.tftpl", {
+      account_id = data.aws_caller_identity.current.account_id
+      config     = var.aws_auth_config
+    })
+  }
+
+  force = true
 }
