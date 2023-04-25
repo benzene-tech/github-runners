@@ -1,6 +1,0 @@
-%{ for username, role_name in config }
-- username: ${username}
-  rolearn: arn:aws:iam::${account_id}:role/${role_name}
-  groups:
-    - system:masters
-%{ endfor }

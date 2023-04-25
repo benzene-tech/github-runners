@@ -14,8 +14,23 @@ spec:
       workDir: /home/runner/work
       containers:
         - name: runner
+          resources:
+            limits:
+              cpu: "2.0"
+              memory: "4Gi"
+            requests:
+              cpu: "1m"
+              memory: "50Mi"
           securityContext:
             privileged: false
+        - name: docker
+          resources:
+            limits:
+              cpu: "4.0"
+              memory: "8Gi"
+            requests:
+              cpu: "1m"
+              memory: "50Mi"
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
 kind: HorizontalRunnerAutoscaler
