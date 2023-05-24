@@ -27,19 +27,12 @@ jobs:
 
       - name: Uninstall Runners
         run: |
-          kubectl delete -f runners.yaml
-          kubectl delete secret github
+          helm uninstall benzene-ubuntu -n arc-runners
           
-          helm uninstall actions-runner-controller \
-            -n actions-runner-system \
-            --wait
-          
-          kubectl delete ns actions-runner-system
+          helm uninstall arc -n arc-systems
 
-      - name: Uninstall cert-manger
+      - name: Delete GitHub secrets
         run: |
-          helm uninstall cert-manager \
-            -n cert-manager \
-            --wait
+          kubectl delete secret github-app -n arc-runners
           
-          kubectl delete ns cert-manager
+          kubectl delete secret github-registry
