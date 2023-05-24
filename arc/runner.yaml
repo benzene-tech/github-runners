@@ -1,0 +1,14 @@
+githubConfigUrl: https://github.com/benzene-tech
+githubConfigSecret: github-app
+
+containerMode:
+  type: dind
+
+template:
+  spec:
+    imagePullSecrets:
+      - name: github-registry
+    containers:
+      - name: runner
+        image: ghcr.io/benzene-tech/github-runner:main
+        imagePullPolicy: Always

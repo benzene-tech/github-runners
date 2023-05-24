@@ -1,4 +1,6 @@
-provider "aws" {}
+provider "aws" {
+  region = "ap-south-1"
+}
 
 provider "kubernetes" {
   host                   = one(data.aws_eks_cluster.this[*].endpoint)

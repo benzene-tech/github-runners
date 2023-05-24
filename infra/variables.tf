@@ -1,7 +1,7 @@
-variable "vpc_cidr_block" {
-  description = "VPC CIDR"
+variable "vpc_id" {
+  description = "VPC ID"
   type        = string
-  nullable    = false
+  default     = null
 }
 
 variable "aws_auth_roles" {

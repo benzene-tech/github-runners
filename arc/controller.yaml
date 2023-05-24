@@ -1,0 +1,4 @@
+priorityClassName: system-cluster-critical
+
+flags:
+  updateStrategy: eventual

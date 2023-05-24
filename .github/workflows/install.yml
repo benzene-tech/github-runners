@@ -8,7 +8,7 @@ concurrency: install
 jobs:
   Install:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'main'
+    environment: GHA
     permissions:
       id-token: write
       contents: read
@@ -19,47 +19,43 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.GHA_AWS_ROLE }}
+          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to EKS cluster
         run: aws eks update-kubeconfig --name github_runners
 
-      - name: Restart coredns deployment
+      - name: Install ARC
         run: |
-          compute_type=$(kubectl get deployment coredns -n kube-system -o jsonpath="{.spec.template.metadata.annotations.eks\.amazonaws\.com/compute-type}")
-          if [ "$compute_type" == "ec2" ]; then
-            kubectl patch deployment coredns \
-              -n kube-system \
-              --type json \
-              -p='[{"op": "remove", "path": "/spec/template/metadata/annotations/eks.amazonaws.com~1compute-type"}]'
-            kubectl rollout restart deployment coredns -n kube-system
-          fi
-
-      - name: Install cert-manger
-        run: |
-          helm repo add jetstack https://charts.jetstack.io
-          helm upgrade --install cert-manager jetstack/cert-manager \
-            -n cert-manager --create-namespace \
-            --version v1.11.0 \
-            --set installCRDs=true \
-            --set webhook.securePort=10260 \
+          helm upgrade --install arc oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
+            --version ${{ vars.ARC_VERSION }} \
+            -n arc-systems --create-namespace \
+            -f arc/controller.yaml \
+            --set flags.logLevel=${{ vars.LOG_LEVEL || 'info' }} \
             --wait
 
-      - name: Install Runners
+      - name: Install runners
         run: |
-          helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
-          helm upgrade --install actions-runner-controller actions-runner-controller/actions-runner-controller \
-            -n actions-runner-system --create-namespace \
-            --version v0.22.0 \
-            --set=authSecret.create=true \
-            --set=authSecret.github_app_id=${{ secrets.RUNNER_APP_ID }} \
-            --set=authSecret.github_app_installation_id=${{ secrets.RUNNER_APP_INSTALLATION_ID }} \
-            --set=authSecret.github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
-            --wait
+          kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply -f -
           
-          kubectl create secret docker-registry github \
+          kubectl create secret docker-registry github-registry \
+            -n arc-runners \
+            --docker-server=ghcr.io \
             --docker-username=${{ github.repository_owner }} \
             --docker-password=${{ secrets.GH_PACKAGES_TOKEN }} \
-            --docker-server=ghcr.io
-          kubectl apply -f runners.yaml
+            --save-config --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic github-app \
+            -n arc-runners \
+            --from-literal=github_app_id=${{ secrets.RUNNER_APP_ID }} \
+            --from-literal=github_app_installation_id=${{ secrets.RUNNER_APP_INSTALLATION_ID }} \
+            --from-literal=github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
+            --save-config --dry-run=client -o yaml | kubectl apply -f -
+          
+          helm upgrade --install benzene-ubuntu oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
+            --version ${{ vars.ARC_VERSION }} \
+            -n arc-runners \
+            -f arc/runner.yaml \
+            --set maxRunners=${{ vars.MAX_RUNNERS }} \
+            --set minRunners=${{ vars.MIN_RUNNERS }} \
+            --wait
