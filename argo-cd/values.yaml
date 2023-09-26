@@ -1,0 +1,9 @@
+configs:
+#  cm:
+  credentialTemplates:
+    github:
+      url: https://github.com/benzene-tech
+      username: Benzene
+  repositories:
+    github-runners:
+      url: https://github.com/benzene-tech/github-runners.git
