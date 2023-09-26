@@ -1,0 +1,13 @@
+githubConfigSecret: github-app
+
+containerMode:
+  type: dind
+
+template:
+  spec:
+    imagePullSecrets:
+      - name: github-registry
+
+controllerServiceAccount:
+  name: arc-gha-rs-controller
+  namespace: arc-systems
