@@ -27,9 +27,21 @@ jobs:
 
       - name: Install Argo CD
         env:
+          NGINX_INGRESS_VERSION: 4.8.0
+        run: |
+          helm upgrade --install ingress-nginx ingress-nginx \
+            --repo https://kubernetes.github.io/ingress-nginx \
+            --version ${{ env.NGINX_INGRESS_VERSION }} \
+            -n ingress-nginx --create-namespace \
+            -f argo-cd/nginx.yaml \
+            --wait
+
+      - name: Install Argo CD
+        env:
           ARGO_CD_VERSION: 5.46.7
         run: |
-          helm upgrade --install argo-cd oci://ghcr.io/argoproj/argo-helm/argo-cd \
+          helm upgrade --install argo-cd \ 
+            oci://ghcr.io/argoproj/argo-helm/argo-cd \
             --version ${{ env.ARGO_CD_VERSION }} \
             -n argocd --create-namespace \
             -f argo-cd/values.yaml \
