@@ -25,7 +25,7 @@ jobs:
       - name: Login to EKS cluster
         run: aws eks update-kubeconfig --name github_runners
 
-      - name: Install Argo CD
+      - name: Install NGINX ingress
         env:
           NGINX_INGRESS_VERSION: 4.8.0
         run: |
@@ -33,7 +33,7 @@ jobs:
             --repo https://kubernetes.github.io/ingress-nginx \
             --version ${{ env.NGINX_INGRESS_VERSION }} \
             -n ingress-nginx --create-namespace \
-            -f argo-cd/nginx.yaml \
+            -f ingress/nginx.yaml \
             --wait
 
       - name: Install Argo CD
@@ -49,13 +49,12 @@ jobs:
             --wait
 
       - name: Install ARC
-        env:
-          RUNNER_APP_ID: ${{ secrets.RUNNER_APP_ID }}
-          RUNNER_APP_INSTALLATION_ID: ${{ secrets.RUNNER_APP_INSTALLATION_ID }}
-          RUNNER_APP_PRIVATE_KEY: ${{ secrets.RUNNER_APP_PRIVATE_KEY }}
-          values: $values
         run: |
-          kubectl apply --wait -f argo-cd/applications/arc.yaml
+          helm upgrade --install arc argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/arc.yaml \
+            --wait
           
           kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
@@ -73,4 +72,8 @@ jobs:
             --from-literal=github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
             --save-config --dry-run=client -o yaml | kubectl apply -f -
           
-          kubectl apply --wait -f argo-cd/applications/runners/
+          helm upgrade --install runners argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/runners.yaml \
+            --wait

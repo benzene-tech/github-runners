@@ -9,7 +9,10 @@ server:
     https: true
 
 configs:
-#  cm:
+  cm:
+    accounts.gha: apiKey
+    accounts.benzene: login
+#    admin.enabled: false
   credentialTemplates:
     github:
       url: https://github.com/benzene-tech
