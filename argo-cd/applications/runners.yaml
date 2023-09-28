@@ -1,30 +1,29 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: benzene-ubuntu
-  namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
-  syncPolicy:
-    automated:
-      prune: true
-    syncOptions:
-      - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
-  sources:
-    - repoURL: https://github.com/benzene-tech/github-runners.git
-      targetRevision: main
-      ref: values
-    - repoURL: ghcr.io/actions/actions-runner-controller-charts
-      chart: gha-runner-scale-set
-      targetRevision: 0.6.1
-      helm:
-        releaseName: benzene-ubuntu
-        valueFiles:
-          - $values/arc/runners/values.yaml
-          - $values/arc/runners/benzene-ubuntu.yaml
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: arc-runners
+applications:
+  - name: benzene-ubuntu
+    namespace: argocd
+    additionalLabels:
+      app.kubernetes.io/component: arc-runner
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    project: default
+    syncPolicy:
+      automated:
+        prune: true
+      syncOptions:
+        - CreateNamespace=true
+        - ApplyOutOfSyncOnly=true
+    sources:
+      - repoURL: https://github.com/benzene-tech/github-runners.git
+        targetRevision: main
+        ref: values
+      - repoURL: ghcr.io/actions/actions-runner-controller-charts
+        chart: gha-runner-scale-set
+        targetRevision: 0.6.1
+        helm:
+          releaseName: benzene-ubuntu
+          valueFiles:
+            - $values/arc/runners/values.yaml
+            - $values/arc/runners/benzene-ubuntu.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: arc-runners
