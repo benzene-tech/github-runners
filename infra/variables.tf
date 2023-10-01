@@ -14,3 +14,19 @@ variable "aws_auth_roles" {
   default  = []
   nullable = false
 }
+
+
+# Helm
+variable "enable_internal_load_balancer" {
+  description = "Determine whether to enable or disable internal load balance"
+  type        = string
+  default     = false
+  nullable    = false
+}
+
+variable "argo_cd_github_token" {
+  description = "GitHub token to create credentials template in Argo CD"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}

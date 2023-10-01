@@ -1,6 +1,4 @@
-githubConfigUrl: https://github.com/benzene-tech
-
-minRunners: 1
+minRunners: 0
 maxRunners: 5
 
 template:
