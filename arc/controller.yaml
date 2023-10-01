@@ -2,4 +2,3 @@ priorityClassName: system-cluster-critical
 
 flags:
   logLevel: info
-  updateStrategy: eventual

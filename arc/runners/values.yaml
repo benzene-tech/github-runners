@@ -1,3 +1,4 @@
+githubConfigUrl: https://github.com/benzene-tech
 githubConfigSecret: github-app
 
 containerMode:
