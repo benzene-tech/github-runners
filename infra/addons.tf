@@ -26,6 +26,21 @@ resource "helm_release" "argo_cd" {
 
   values = [file("${path.root}/../argo-cd/values.yaml")]
 
+  set {
+    name  = "configs.cm.url"
+    value = "https://${data.kubernetes_service.this.status[0].load_balancer[0].ingress[0].hostname}"
+  }
+
+  set_sensitive {
+    name  = "configs.secret.extra.dex\\.github\\.clientID"
+    value = var.argo_cd_github_oauth_client_id
+  }
+
+  set_sensitive {
+    name  = "configs.secret.extra.dex\\.github\\.clientSecret"
+    value = var.argo_cd_github_oauth_client_secret
+  }
+
   set_sensitive {
     name  = "configs.secret.githubSecret"
     value = random_password.github_webhook_secret.result
