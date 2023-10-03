@@ -3,6 +3,7 @@ server:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
       nginx.ingress.kubernetes.io/backend-protocol: HTTPS
     ingressClassName: nginx
     hosts: [ ]
@@ -10,13 +11,22 @@ server:
 
 configs:
   cm:
+    dex.config: |
+      connectors:
+        - name: GitHub
+          id: github
+          type: github
+          config:
+            clientID: $dex.github.clientID
+            clientSecret: $dex.github.clientSecret
+            orgs:
+              - name: benzene-tech
     accounts.gha: apiKey
-    accounts.benzene: login
-#    admin.enabled: false
+  #    admin.enabled: false
   credentialTemplates:
     github:
       url: https://github.com/benzene-tech
       username: Benzene
   repositories:
     github-runners:
-      url: https://github.com/benzene-tech/github-runners.git
+      url: https://github.com/benzene-tech/github-runners

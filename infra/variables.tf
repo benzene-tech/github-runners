@@ -24,6 +24,20 @@ variable "enable_internal_load_balancer" {
   nullable    = false
 }
 
+variable "argo_cd_github_oauth_client_id" {
+  description = "Argo CD GitHub OAuth app client ID"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}
+
+variable "argo_cd_github_oauth_client_secret" {
+  description = "Argo CD GitHub OAuth app client secret"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}
+
 variable "argo_cd_github_token" {
   description = "GitHub token to create credentials template in Argo CD"
   type        = string
