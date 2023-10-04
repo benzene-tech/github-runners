@@ -1,3 +1,4 @@
+### Ingress
 resource "helm_release" "ingress_nginx" {
   name             = "ingress-nginx"
   repository       = "https://kubernetes.github.io/ingress-nginx"
@@ -16,6 +17,8 @@ resource "helm_release" "ingress_nginx" {
   depends_on = [module.eks]
 }
 
+
+### Argo CD
 resource "helm_release" "argo_cd" {
   name             = "argo-cd"
   repository       = "oci://ghcr.io/argoproj/argo-helm"
@@ -28,7 +31,16 @@ resource "helm_release" "argo_cd" {
 
   set {
     name  = "configs.cm.url"
-    value = "https://${data.kubernetes_service.this.status[0].load_balancer[0].ingress[0].hostname}"
+    value = local.argo_cd_url
+  }
+
+  dynamic "set_sensitive" {
+    for_each = local.argo_cd_local_users
+
+    content {
+      name  = "configs.secret.extra.accounts\\.${set_sensitive.value}\\.password"
+      value = random_password.argo_cd_local_user_passwords[set_sensitive.value].bcrypt_hash
+    }
   }
 
   set_sensitive {
@@ -60,4 +72,23 @@ resource "random_password" "github_webhook_secret" {
   min_upper   = 1
   min_numeric = 1
   min_special = 1
+}
+
+resource "random_password" "argo_cd_local_user_passwords" {
+  for_each = local.argo_cd_local_users
+
+  length      = 32
+  min_lower   = 1
+  min_upper   = 1
+  min_numeric = 1
+  min_special = 1
+}
+
+resource "kubernetes_secret" "this" {
+  metadata {
+    name      = "argocd-local-user-passwords"
+    namespace = "argocd"
+  }
+
+  data = { for user in local.argo_cd_local_users : user => random_password.argo_cd_local_user_passwords[user].result }
 }

@@ -27,11 +27,17 @@ jobs:
 
       - name: Install ARC
         run: |
+          argocd login github-runners.benzene-tech.com/argo-cd \
+            --name github-runners \
+            --username gha \
+            --password "$(kubectl get secret -n argocd argocd-local-user-passwords -o jsonpath="{.data.gha}" | base64 -d)"
+          
           helm upgrade --install arc argocd-apps \
             --repo https://argoproj.github.io/argo-helm \
             -n argocd --create-namespace \
             -f argo-cd/applications/arc.yaml \
             --wait
+          argocd app wait arc
           
           kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
@@ -47,10 +53,11 @@ jobs:
             --from-literal=github_app_id=${{ secrets.RUNNER_APP_ID }} \
             --from-literal=github_app_installation_id=${{ secrets.RUNNER_APP_INSTALLATION_ID }} \
             --from-literal=github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
-            --save-config --dry-run=client -o yaml | kubectl apply -f -
+            --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
           helm upgrade --install runners argocd-apps \
             --repo https://argoproj.github.io/argo-helm \
             -n argocd --create-namespace \
             -f argo-cd/applications/runners.yaml \
             --wait
+          argocd app wait -l app.kubernetes.io/component=arc-runner
