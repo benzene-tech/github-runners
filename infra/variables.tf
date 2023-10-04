@@ -16,9 +16,9 @@ variable "aws_auth_roles" {
 }
 
 
-# Helm
+### Helm
 variable "enable_internal_load_balancer" {
-  description = "Determine whether to enable or disable internal load balance"
+  description = "Determine whether to enable or disable internal load balancer for NGINX ingress"
   type        = string
   default     = false
   nullable    = false

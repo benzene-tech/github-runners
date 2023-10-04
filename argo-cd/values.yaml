@@ -6,7 +6,10 @@ server:
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
       nginx.ingress.kubernetes.io/backend-protocol: HTTPS
     ingressClassName: nginx
-    hosts: [ ]
+    hosts:
+      - github-runners.benzene-tech.com
+    paths:
+      - /argo-cd
     https: true
 
 configs:
@@ -21,8 +24,14 @@ configs:
             clientSecret: $dex.github.clientSecret
             orgs:
               - name: benzene-tech
-    accounts.gha: apiKey
-  #    admin.enabled: false
+    accounts.gha: login
+    admin.enabled: false
+
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, gha, role:admin
+
   credentialTemplates:
     github:
       url: https://github.com/benzene-tech
