@@ -27,7 +27,20 @@ resource "helm_release" "argo_cd" {
   namespace        = "argocd"
   create_namespace = true
 
-  values = [file("${path.root}/../argo-cd/values.yaml")]
+  values = [
+    file("${path.root}/../argo-cd/values.yaml"),
+    yamlencode({
+      configs = {
+        rbac = {
+          "policy.csv" = <<-EOT
+            %{for user in local.argo_cd_local_users~}
+            g, ${user}, role:admin
+            %{endfor~}
+          EOT
+        }
+      }
+    })
+  ]
 
   set {
     name  = "configs.cm.url"
@@ -51,6 +64,15 @@ resource "helm_release" "argo_cd" {
   set_sensitive {
     name  = "configs.secret.extra.dex\\.github\\.clientSecret"
     value = var.argo_cd_github_oauth_client_secret
+  }
+
+  dynamic "set" {
+    for_each = local.argo_cd_local_users
+
+    content {
+      name  = "configs.cm.accounts\\.${set.value}"
+      value = "login"
+    }
   }
 
   set_sensitive {
@@ -91,4 +113,6 @@ resource "kubernetes_secret" "this" {
   }
 
   data = { for user in local.argo_cd_local_users : user => random_password.argo_cd_local_user_passwords[user].result }
+
+  depends_on = [helm_release.argo_cd]
 }
