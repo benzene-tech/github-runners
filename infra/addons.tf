@@ -7,7 +7,7 @@ resource "helm_release" "ingress_nginx" {
   namespace        = "ingress-nginx"
   create_namespace = true
 
-  values = [file("${path.root}/../ingress/nginx.yaml")]
+  values = [file("${path.root}/helm/nginx.yaml")]
 
   set {
     name  = "controller.service.internal.enabled"
@@ -28,14 +28,12 @@ resource "helm_release" "argo_cd" {
   create_namespace = true
 
   values = [
-    file("${path.root}/../argo-cd/values.yaml"),
+    file("${path.root}/helm/argo-cd.yaml"),
     yamlencode({
       configs = {
         rbac = {
           "policy.csv" = <<-EOT
-            %{for user in local.argo_cd_local_users~}
-            g, ${user}, role:admin
-            %{endfor~}
+            g, ${local.argo_cd_username}, role:admin
           EOT
         }
       }
@@ -47,13 +45,14 @@ resource "helm_release" "argo_cd" {
     value = local.argo_cd_url
   }
 
-  dynamic "set_sensitive" {
-    for_each = local.argo_cd_local_users
+  set {
+    name  = "configs.cm.accounts\\.${local.argo_cd_username}"
+    value = "login"
+  }
 
-    content {
-      name  = "configs.secret.extra.accounts\\.${set_sensitive.value}\\.password"
-      value = random_password.argo_cd_local_user_passwords[set_sensitive.value].bcrypt_hash
-    }
+  set_sensitive {
+    name  = "configs.secret.extra.accounts\\.${local.argo_cd_username}\\.password"
+    value = random_password.argo_cd_local_user_password.bcrypt_hash
   }
 
   set_sensitive {
@@ -64,15 +63,6 @@ resource "helm_release" "argo_cd" {
   set_sensitive {
     name  = "configs.secret.extra.dex\\.github\\.clientSecret"
     value = var.argo_cd_github_oauth_client_secret
-  }
-
-  dynamic "set" {
-    for_each = local.argo_cd_local_users
-
-    content {
-      name  = "configs.cm.accounts\\.${set.value}"
-      value = "login"
-    }
   }
 
   set_sensitive {
@@ -88,17 +78,19 @@ resource "helm_release" "argo_cd" {
   depends_on = [module.eks]
 }
 
-resource "random_password" "github_webhook_secret" {
-  length      = 16
-  min_lower   = 1
-  min_upper   = 1
-  min_numeric = 1
-  min_special = 1
+resource "github_actions_variable" "this" {
+  repository    = local.github_repository
+  variable_name = "ARGO_CD_USERNAME"
+  value         = local.argo_cd_username
 }
 
-resource "random_password" "argo_cd_local_user_passwords" {
-  for_each = local.argo_cd_local_users
+resource "github_actions_secret" "this" {
+  repository      = local.github_repository
+  secret_name     = "ARGO_CD_PASSWORD"
+  plaintext_value = random_password.argo_cd_local_user_password.result
+}
 
+resource "random_password" "argo_cd_local_user_password" {
   length      = 32
   min_lower   = 1
   min_upper   = 1
@@ -106,13 +98,24 @@ resource "random_password" "argo_cd_local_user_passwords" {
   min_special = 1
 }
 
-resource "kubernetes_secret" "this" {
-  metadata {
-    name      = "argocd-local-user-passwords"
-    namespace = "argocd"
+resource "github_repository_webhook" "this" {
+  repository = local.github_repository
+
+  configuration {
+    url          = "${local.argo_cd_url}/api/webhook"
+    content_type = "json"
+    secret       = random_password.github_webhook_secret.result
   }
 
-  data = { for user in local.argo_cd_local_users : user => random_password.argo_cd_local_user_passwords[user].result }
+  events = ["push"]
 
   depends_on = [helm_release.argo_cd]
+}
+
+resource "random_password" "github_webhook_secret" {
+  length      = 16
+  min_lower   = 1
+  min_upper   = 1
+  min_numeric = 1
+  min_special = 1
 }

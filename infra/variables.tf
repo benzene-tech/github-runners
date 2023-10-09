@@ -44,3 +44,26 @@ variable "argo_cd_github_token" {
   nullable    = false
   sensitive   = true
 }
+
+
+### GitHub
+variable "github_app_id" {
+  description = "GitHub App ID"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}
+
+variable "github_app_installation_id" {
+  description = "GitHub App installation ID"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}
+
+variable "github_app_private_key" {
+  description = "GitHub App private key"
+  type        = string
+  nullable    = false
+  sensitive   = true
+}
