@@ -25,12 +25,15 @@ jobs:
       - name: Login to EKS cluster
         run: aws eks update-kubeconfig --name github_runners
 
+      - name: Setup Argo CD CLI
+        uses: benzene-tech/setup-argo-cd@v1
+
       - name: Install ARC
         run: |
           argocd login github-runners.benzene-tech.com/argo-cd \
             --name github-runners \
-            --username gha \
-            --password "$(kubectl get secret -n argocd argocd-local-user-passwords -o jsonpath="{.data.gha}" | base64 -d)"
+            --username ${{ vars.ARGO_CD_USERNAME }} \
+            --password ${{ secrets.ARGO_CD_PASSWORD }}
           
           helm upgrade --install arc argocd-apps \
             --repo https://argoproj.github.io/argo-helm \
