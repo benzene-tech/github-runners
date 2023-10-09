@@ -17,10 +17,30 @@ variable "aws_auth_roles" {
 
 
 ### Helm
+variable "external_dns_version" {
+  description = "External DNS helm chart version"
+  type        = string
+  nullable    = false
+}
+
+
+variable "ingress_nginx_version" {
+  description = "NGINX ingress helm chart version"
+  type        = string
+  nullable    = false
+}
+
 variable "enable_internal_load_balancer" {
   description = "Determine whether to enable or disable internal load balancer for NGINX ingress"
   type        = string
   default     = false
+  nullable    = false
+}
+
+
+variable "argo_cd_version" {
+  description = "Argo CD helm chart version"
+  type        = string
   nullable    = false
 }
 

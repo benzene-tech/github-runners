@@ -5,5 +5,5 @@ output "cluster_name" {
 
 output "argo_cd_url" {
   description = "Argo CD url"
-  value       = local.argo_cd_url
+  value       = yamldecode(one(helm_release.argo_cd.metadata[*].values)).configs.cm.url
 }
