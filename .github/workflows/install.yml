@@ -30,7 +30,7 @@ jobs:
 
       - name: Install ARC
         run: |
-          argocd login github-runners.benzene-tech.com/argo-cd \
+          argocd login ${{ vars.ARGO_CD_SERVER }} \
             --name github-runners \
             --username ${{ vars.ARGO_CD_USERNAME }} \
             --password ${{ secrets.ARGO_CD_PASSWORD }}
@@ -40,7 +40,8 @@ jobs:
             -n argocd --create-namespace \
             -f argo-cd/applications/arc.yaml \
             --wait
-          argocd app wait arc
+          argocd app wait arc \
+            --timeout 600
           
           kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
@@ -63,4 +64,5 @@ jobs:
             -n argocd --create-namespace \
             -f argo-cd/applications/runners.yaml \
             --wait
-          argocd app wait -l app.kubernetes.io/component=arc-runner
+          argocd app wait -l app.kubernetes.io/component=arc-runner \
+            --timeout 600

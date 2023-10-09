@@ -1,6 +1,7 @@
 locals {
   name_prefix       = "github-runners"
-  github_repository = "github-runners"
-  argo_cd_url       = "https://github-runners.benzene-tech.com/argo-cd"
+  url               = "https://github-runners.benzene.co.in"
+  argo_cd_uri       = "argo-cd"
   argo_cd_username  = "benzene"
+  github_repository = "github-runners"
 }
