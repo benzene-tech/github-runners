@@ -51,7 +51,7 @@ jobs:
           cache-from: type=gha
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@0.13.0
         with:
           image-ref: github-runner:latest
           format: ${{ github.event_name != 'pull_request' && 'sarif' || 'table' }}
