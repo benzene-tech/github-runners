@@ -44,6 +44,12 @@ variable "argo_cd_version" {
   nullable    = false
 }
 
+variable "argo_cd_apps_version" {
+  description = "Argo CD apps helm chart version"
+  type        = string
+  nullable    = false
+}
+
 variable "argo_cd_github_oauth_client_id" {
   description = "Argo CD GitHub OAuth app client ID"
   type        = string

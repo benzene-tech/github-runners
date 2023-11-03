@@ -1,45 +1,40 @@
-### External DNS
-resource "helm_release" "external_dns" {
-  name             = "external-dns"
-  repository       = "https://kubernetes-sigs.github.io/external-dns"
-  chart            = "external-dns"
-  version          = var.external_dns_version
-  namespace        = "kube-system"
+resource "helm_release" "this" {
+  for_each = local.helm_releases
+
+  name             = replace(each.key, "_", "-")
+  repository       = each.value.repository
+  chart            = each.value.chart
+  version          = each.value.version
+  namespace        = each.value.namespace
   create_namespace = true
 
-  set_list {
-    name  = "sources"
-    value = ["ingress"]
+  values = toset([for file_path in lookup(each.value, "values_file_paths", []) : file(file_path)])
+
+  dynamic "set" {
+    for_each = lookup(each.value, "set", {})
+
+    content {
+      name  = set.key
+      value = set.value
+    }
   }
 
-  set {
-    name  = "policy"
-    value = "sync"
+  dynamic "set_list" {
+    for_each = lookup(each.value, "set_list", {})
+
+    content {
+      name  = set_list.key
+      value = set_list.value
+    }
   }
 
-  set_list {
-    name  = "domainFilters"
-    value = [replace(replace(local.url, "/^(?:(?:https)?:\\/\\/)?\\S+?\\./", ""), "/(?:[\\/?]{1}\\S*)*/", "")]
-  }
+  dynamic "set_sensitive" {
+    for_each = lookup(each.value, "set_sensitive", {})
 
-  depends_on = [module.eks]
-}
-
-
-### NGINX Ingress
-resource "helm_release" "ingress_nginx" {
-  name             = "ingress-nginx"
-  repository       = "https://kubernetes.github.io/ingress-nginx"
-  chart            = "ingress-nginx"
-  version          = var.ingress_nginx_version
-  namespace        = "ingress-nginx"
-  create_namespace = true
-
-  values = [file("${path.root}/helm/nginx.yaml")]
-
-  set {
-    name  = "controller.service.internal.enabled"
-    value = var.enable_internal_load_balancer
+    content {
+      name  = set_sensitive.key
+      value = set_sensitive.value
+    }
   }
 
   depends_on = [module.eks]
@@ -61,7 +56,42 @@ resource "helm_release" "argo_cd" {
       configs = {
         rbac = {
           "policy.csv" = <<-EOT
-            g, ${local.argo_cd_username}, role:admin
+            p, role:readwrite, applications, create, */*, allow
+            p, role:readwrite, applications, update, */*, allow
+            p, role:readwrite, applications, delete, */*, allow
+            p, role:readwrite, applications, sync, */*, allow
+            p, role:readwrite, applications, override, */*, allow
+            p, role:readwrite, applications, action/*, */*, allow
+            p, role:readwrite, applicationsets, get, */*, allow
+            p, role:readwrite, applicationsets, create, */*, allow
+            p, role:readwrite, applicationsets, update, */*, allow
+            p, role:readwrite, applicationsets, delete, */*, allow
+            p, role:readwrite, certificates, create, *, allow
+            p, role:readwrite, certificates, update, *, allow
+            p, role:readwrite, certificates, delete, *, allow
+            p, role:readwrite, clusters, create, *, allow
+            p, role:readwrite, clusters, update, *, allow
+            p, role:readwrite, clusters, delete, *, allow
+            p, role:readwrite, repositories, create, *, allow
+            p, role:readwrite, repositories, update, *, allow
+            p, role:readwrite, repositories, delete, *, allow
+            p, role:readwrite, projects, create, *, allow
+            p, role:readwrite, projects, update, *, allow
+            p, role:readwrite, projects, delete, *, allow
+            p, role:readwrite, accounts, update, *, allow
+            p, role:readwrite, gpgkeys, create, *, allow
+            p, role:readwrite, gpgkeys, delete, *, allow
+
+            %{~for helm_release in helm_release.this~}
+            p, role:readwrite, applications, create, default/${one(helm_release.metadata[*].name)}, deny
+            p, role:readwrite, applications, update, default/${one(helm_release.metadata[*].name)}, deny
+            p, role:readwrite, applications, delete, default/${one(helm_release.metadata[*].name)}, deny
+            p, role:readwrite, applications, sync, default/${one(helm_release.metadata[*].name)}, deny
+            p, role:readwrite, applications, override, default/${one(helm_release.metadata[*].name)}, deny
+            %{~endfor~}
+
+            g, role:readwrite, role:readonly
+            g, ${local.argo_cd_username}, role:readwrite
           EOT
         }
       }
@@ -81,6 +111,15 @@ resource "helm_release" "argo_cd" {
   set {
     name  = "configs.cm.url"
     value = "${local.url}/${local.argo_cd_uri}"
+  }
+
+  dynamic "set" {
+    for_each = toset(["basehref", "rootpath"])
+
+    content {
+      name  = "configs.params.server\\.${set.value}"
+      value = "/${local.argo_cd_uri}"
+    }
   }
 
   set {
@@ -112,14 +151,18 @@ resource "helm_release" "argo_cd" {
     name  = "configs.credentialTemplates.github.password"
     value = var.argo_cd_github_token
   }
-
-  depends_on = [helm_release.external_dns, helm_release.ingress_nginx]
 }
 
-resource "github_actions_variable" "argo_cd_server" {
+resource "github_actions_variable" "argo_cd_server_host" {
   repository    = local.github_repository
-  variable_name = "ARGO_CD_SERVER"
-  value         = trimprefix(yamldecode(one(helm_release.argo_cd.metadata[*].values)).configs.cm.url, "https://")
+  variable_name = "ARGO_CD_SERVER_HOST"
+  value         = trimsuffix(trimprefix(yamldecode(one(helm_release.argo_cd.metadata[*].values)).configs.cm.url, "https://"), "/${local.argo_cd_uri}")
+}
+
+resource "github_actions_variable" "argo_cd_server_path" {
+  repository    = local.github_repository
+  variable_name = "ARGO_CD_SERVER_PATH"
+  value         = local.argo_cd_uri
 }
 
 resource "github_actions_variable" "argo_cd_username" {
@@ -145,7 +188,7 @@ resource "random_password" "argo_cd_local_user_password" {
   min_numeric = 1
   min_special = 1
 
-  depends_on = [helm_release.ingress_nginx]
+  depends_on = [helm_release.this["ingress_nginx"]]
 }
 
 resource "github_repository_webhook" "this" {
@@ -167,5 +210,55 @@ resource "random_password" "github_webhook_secret" {
   min_numeric = 1
   min_special = 1
 
-  depends_on = [helm_release.ingress_nginx]
+  depends_on = [helm_release.this["ingress_nginx"]]
+}
+
+resource "helm_release" "argo_cd_applications" {
+  for_each = helm_release.this
+
+  name             = each.value.name
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argocd-apps"
+  version          = var.argo_cd_apps_version
+  namespace        = "argocd"
+  create_namespace = true
+
+  values = [
+    yamlencode({
+      applications = [
+        {
+          name      = each.value.name
+          namespace = "argocd"
+          project   = "default"
+          syncPolicy = {
+            syncOptions = ["ApplyOutOfSyncOnly=true", "RespectIgnoreDifferences=true"]
+          }
+          sources = [
+            {
+              repoURL        = each.value.repository
+              chart          = each.value.chart
+              targetRevision = each.value.version
+              helm = {
+                releaseName = each.value.name
+                values      = yamlencode(jsondecode(one(each.value.metadata[*].values)))
+              }
+            }
+          ]
+          destination = {
+            server    = "https://kubernetes.default.svc"
+            namespace = each.value.namespace
+          }
+          ignoreDifferences = [
+            {
+              group        = "*"
+              kind         = "*"
+              jsonPointers = ["/metadata/labels", "/spec"]
+            }
+          ]
+        }
+      ]
+    })
+  ]
+
+  depends_on = [helm_release.argo_cd]
 }
