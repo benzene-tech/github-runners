@@ -25,23 +25,24 @@ jobs:
       - name: Login to EKS cluster
         run: aws eks update-kubeconfig --name github_runners
 
-      - name: Setup Argo CD CLI
-        uses: benzene-tech/setup-argo-cd@v1
-
-      - name: Install ARC
+      - name: Setup Argo CD
         run: |
-          argocd login ${{ vars.ARGO_CD_SERVER }} \
+          argocd login ${{ vars.ARGO_CD_SERVER_HOST }} \
+            --grpc-web-root-path ${{ vars.ARGO_CD_SERVER_PATH }}
             --name github-runners \
             --username ${{ vars.ARGO_CD_USERNAME }} \
             --password ${{ secrets.ARGO_CD_PASSWORD }}
-          
+
+      - name: Install ARC
+        run: |
           helm upgrade --install arc argocd-apps \
             --repo https://argoproj.github.io/argo-helm \
             -n argocd --create-namespace \
             -f argo-cd/applications/arc.yaml \
+            --set "applications[0].sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
             --wait
           argocd app wait arc \
-            --timeout 600
+            --timeout 300
           
           kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
@@ -63,6 +64,7 @@ jobs:
             --repo https://argoproj.github.io/argo-helm \
             -n argocd --create-namespace \
             -f argo-cd/applications/runners.yaml \
+            --set "applicationsets[0].template.spec.sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
             --wait
           argocd app wait -l app.kubernetes.io/component=arc-runner \
-            --timeout 600
+            --timeout 300
