@@ -134,12 +134,12 @@ resource "helm_release" "argo_cd" {
 
   set_sensitive {
     name  = "configs.secret.extra.dex\\.github\\.clientID"
-    value = var.argo_cd_github_oauth_client_id
+    value = var.argo_cd_github_app_client_id
   }
 
   set_sensitive {
     name  = "configs.secret.extra.dex\\.github\\.clientSecret"
-    value = var.argo_cd_github_oauth_client_secret
+    value = var.argo_cd_github_app_client_secret
   }
 
   set_sensitive {
