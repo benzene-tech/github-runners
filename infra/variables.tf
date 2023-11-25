@@ -50,15 +50,15 @@ variable "argo_cd_apps_version" {
   nullable    = false
 }
 
-variable "argo_cd_github_oauth_client_id" {
-  description = "Argo CD GitHub OAuth app client ID"
+variable "argo_cd_github_app_client_id" {
+  description = "Argo CD GitHub app client ID"
   type        = string
   nullable    = false
   sensitive   = true
 }
 
-variable "argo_cd_github_oauth_client_secret" {
-  description = "Argo CD GitHub OAuth app client secret"
+variable "argo_cd_github_app_client_secret" {
+  description = "Argo CD GitHub app client secret"
   type        = string
   nullable    = false
   sensitive   = true
