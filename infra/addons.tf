@@ -1,3 +1,59 @@
+resource "aws_eks_pod_identity_association" "this" {
+  for_each = merge(
+    { for name, config in local.helm_releases : name => config if lookup(config, "aws_role", null) != null },
+    {
+      karpenter = {
+        namespace = "kube-system"
+      }
+    }
+  )
+
+  cluster_name    = module.eks.name
+  service_account = replace(each.key, "_", "-")
+  namespace       = each.value.namespace
+  role_arn        = data.aws_iam_role.this[each.key].arn
+
+  depends_on = [module.eks.addons]
+}
+
+
+resource "helm_release" "karpenter" {
+  name             = "karpenter"
+  repository       = "oci://public.ecr.aws/karpenter"
+  chart            = "karpenter"
+  version          = "v0.33.0"
+  namespace        = "kube-system"
+  create_namespace = true
+
+  set {
+    name  = "settings.clusterName"
+    value = module.eks.name
+  }
+
+  set {
+    name  = "controller.resources.requests.cpu"
+    value = "1"
+  }
+
+  set {
+    name  = "controller.resources.requests.memory"
+    value = "1Gi"
+  }
+
+  set {
+    name  = "controller.resources.limits.cpu"
+    value = "1"
+  }
+
+  set {
+    name  = "controller.resources.limits.memory"
+    value = "1Gi"
+  }
+
+  depends_on = [module.eks, aws_eks_pod_identity_association.this]
+}
+
+
 resource "helm_release" "this" {
   for_each = local.helm_releases
 
@@ -37,7 +93,7 @@ resource "helm_release" "this" {
     }
   }
 
-  depends_on = [module.eks]
+  depends_on = [helm_release.karpenter]
 }
 
 

@@ -31,7 +31,7 @@ applicationsets:
                 - $values/arc/runners/values.yaml
                 - $values/arc/runners/{{name}}.yaml
           - repoURL: https://github.com/benzene-tech/github-runners.git
-            targetRevision: main
+            targetRevision: dev
             ref: values
         destination:
           server: https://kubernetes.default.svc

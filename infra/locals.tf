@@ -2,12 +2,19 @@ locals {
   name_prefix = "github-runners"
   url         = "https://github-runners.benzene.co.in"
 
+  addons = {
+    aws-eks-pod-identity-agent = {
+      version = "v1.0.0-eksbuild.1"
+    }
+  }
+
   helm_releases = {
     external_dns = {
       repository = "https://kubernetes-sigs.github.io/external-dns"
       chart      = "external-dns"
       version    = var.external_dns_version
       namespace  = "kube-system"
+      aws_role   = "BenzeneExternalDNSController"
 
       set = {
         policy = "sync"
