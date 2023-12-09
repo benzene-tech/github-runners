@@ -20,7 +20,7 @@ applications:
           valueFiles:
             - $values/arc/controller.yaml
       - repoURL: https://github.com/benzene-tech/github-runners.git
-        targetRevision: dev
+        targetRevision: main
         ref: values
     destination:
       server: https://kubernetes.default.svc

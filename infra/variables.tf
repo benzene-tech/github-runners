@@ -16,7 +16,13 @@ variable "aws_auth_roles" {
 }
 
 
-### Helm
+### Addons
+variable "karpenter_version" {
+  description = "Karpenter helm chart version"
+  type        = string
+  nullable    = false
+}
+
 variable "external_dns_version" {
   description = "External DNS helm chart version"
   type        = string
