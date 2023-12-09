@@ -7,14 +7,7 @@ data "aws_eks_cluster_auth" "this" {
 }
 
 data "aws_iam_role" "this" {
-  for_each = merge(
-    { for name, config in local.helm_releases : name => config if lookup(config, "aws_role", null) != null },
-    {
-      karpenter = {
-        aws_role = "BenzeneKarpenterController"
-      }
-    }
-  )
+  for_each = { for name, config in local.addons : name => config if lookup(config, "aws_role", null) != null }
 
   name = each.value.aws_role
 }

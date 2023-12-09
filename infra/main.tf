@@ -18,4 +18,5 @@ module "eks" {
       }
     }
   }
+  addons = local.eks_addons
 }
