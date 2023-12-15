@@ -8,7 +8,7 @@ template:
   spec:
     imagePullSecrets:
       - name: github-registry
-    containers:
-      - name: runner
-        image: ghcr.io/benzene-tech/github-runner:main
-        imagePullPolicy: Always
+
+controllerServiceAccount:
+  name: arc-gha-rs-controller
+  namespace: arc-systems
