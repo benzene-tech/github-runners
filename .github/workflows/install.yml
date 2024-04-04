@@ -8,7 +8,7 @@ concurrency: install
 jobs:
   Install:
     runs-on: ubuntu-latest
-    environment: GHA
+    environment: ARC
     permissions:
       id-token: write
       contents: read
@@ -35,7 +35,13 @@ jobs:
 
       - name: Install ARC
         run: |
-          yq '.spec.sources[0].targetRevision="${{ vars.ARC_VERSION }}"' argo-cd/applications/arc.yaml | kubectl apply --wait -f -
+          helm upgrade --install arc argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            --version 2.0.0 \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/arc.yaml \
+            --set "applications[0].sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
+            --wait
           argocd app wait arc \
             --timeout 300
           
@@ -55,6 +61,12 @@ jobs:
             --from-literal=github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
             --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
-          yq '.spec.template.spec.sources[0].targetRevision="${{ vars.ARC_VERSION }}"' argo-cd/applications/runners.yaml | kubectl apply --wait -f -
+          helm upgrade --install runners argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            --version 2.0.0 \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/runners.yaml \
+            --set "applicationsets[0].template.spec.sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
+            --wait
           argocd app wait -l app.kubernetes.io/component=arc-runner \
             --timeout 300

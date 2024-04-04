@@ -1,5 +1,5 @@
 minRunners: 0
-maxRunners: 5
+maxRunners: 20
 
 template:
   spec:

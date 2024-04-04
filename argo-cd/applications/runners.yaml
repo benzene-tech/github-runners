@@ -1,41 +1,38 @@
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: runners
-  namespace: argocd
-spec:
-  generators:
-    - list:
-        elements:
-          - name: benzene-ubuntu
-  syncPolicy:
-    preserveResourcesOnDeletion: false
-  template:
-    metadata:
-      name: '{{name}}'
-      namespace: argocd
-      labels:
-        app.kubernetes.io/component: arc-runner
-    spec:
-      project: github-runners
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - ApplyOutOfSyncOnly=true
-      sources:
-        - repoURL: ghcr.io/actions/actions-runner-controller-charts
-          chart: gha-runner-scale-set
-          helm:
-            releaseName: '{{name}}'
-            valueFiles:
-              - $values/arc/runners/values.yaml
-              - $values/arc/runners/{{name}}.yaml
-        - repoURL: https://github.com/benzene-tech/github-runners
-          targetRevision: main
-          ref: values
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: arc-runners
+applicationsets:
+  - name: runners
+    namespace: argocd
+    generators:
+      - list:
+          elements:
+            - name: benzene-ubuntu
+    syncPolicy:
+      preserveResourcesOnDeletion: false
+    template:
+      metadata:
+        name: '{{name}}'
+        namespace: argocd
+        labels:
+          app.kubernetes.io/component: arc-runner
+      spec:
+        project: github-runners
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+          syncOptions:
+            - CreateNamespace=true
+            - ApplyOutOfSyncOnly=true
+        sources:
+          - repoURL: ghcr.io/actions/actions-runner-controller-charts
+            chart: gha-runner-scale-set
+            helm:
+              releaseName: '{{name}}'
+              valueFiles:
+                - $values/arc/runners/values.yaml
+                - $values/arc/runners/{{name}}.yaml
+          - repoURL: https://github.com/benzene-tech/github-runners
+            targetRevision: main
+            ref: values
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: arc-runners

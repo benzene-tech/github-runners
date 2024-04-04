@@ -5,6 +5,9 @@ containerMode:
   type: dind
 
 template:
+  metadata:
+    annotations:
+      karpenter.sh/do-not-disrupt: 'true'
   spec:
     imagePullSecrets:
       - name: github-registry

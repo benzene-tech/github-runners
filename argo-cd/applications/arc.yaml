@@ -1,30 +1,27 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: arc
-  namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: github-runners
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
-      - ServerSideApply=true
-  sources:
-    - repoURL: ghcr.io/actions/actions-runner-controller-charts
-      chart: gha-runner-scale-set-controller
-      helm:
-        releaseName: arc
-        valueFiles:
-          - $values/arc/controller.yaml
-    - repoURL: https://github.com/benzene-tech/github-runners
-      targetRevision: main
-      ref: values
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: arc-systems
+applications:
+  - name: arc
+    namespace: argocd
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    project: github-runners
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
+      syncOptions:
+        - CreateNamespace=true
+        - ApplyOutOfSyncOnly=true
+        - ServerSideApply=true
+    sources:
+      - repoURL: ghcr.io/actions/actions-runner-controller-charts
+        chart: gha-runner-scale-set-controller
+        helm:
+          releaseName: arc
+          valueFiles:
+            - $values/arc/controller.yaml
+      - repoURL: https://github.com/benzene-tech/github-runners
+        targetRevision: main
+        ref: values
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: arc-systems
