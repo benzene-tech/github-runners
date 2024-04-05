@@ -8,7 +8,7 @@ concurrency: install
 jobs:
   Install:
     runs-on: ubuntu-latest
-    environment: GHA
+    environment: ARC
     permissions:
       id-token: write
       contents: read
@@ -23,39 +23,50 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to EKS cluster
-        run: aws eks update-kubeconfig --name github_runners
+        run: aws eks update-kubeconfig --name Benzene
+
+      - name: Setup Argo CD
+        run: |
+          argocd login ${{ vars.ARGO_CD_SERVER_HOST }} \
+            --grpc-web-root-path ${{ vars.ARGO_CD_SERVER_PATH }}
+            --name github-runners \
+            --username ${{ vars.ARGO_CD_USERNAME }} \
+            --password ${{ secrets.ARGO_CD_PASSWORD }}
 
       - name: Install ARC
         run: |
-          helm upgrade --install arc oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
-            --version ${{ vars.ARC_VERSION }} \
-            -n arc-systems --create-namespace \
-            -f arc/controller.yaml \
-            --set flags.logLevel=${{ vars.LOG_LEVEL || 'info' }} \
+          helm upgrade --install arc argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            --version 2.0.0 \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/arc.yaml \
+            --set "applications[0].sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
             --wait
-
-      - name: Install runners
-        run: |
-          kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply -f -
+          argocd app wait arc \
+            --timeout 300
+          
+          kubectl create ns arc-runners --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
           kubectl create secret docker-registry github-registry \
             -n arc-runners \
             --docker-server=ghcr.io \
             --docker-username=${{ github.repository_owner }} \
             --docker-password=${{ secrets.GH_PACKAGES_TOKEN }} \
-            --save-config --dry-run=client -o yaml | kubectl apply -f -
+            --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
           kubectl create secret generic github-app \
             -n arc-runners \
             --from-literal=github_app_id=${{ secrets.RUNNER_APP_ID }} \
             --from-literal=github_app_installation_id=${{ secrets.RUNNER_APP_INSTALLATION_ID }} \
             --from-literal=github_app_private_key="${{ secrets.RUNNER_APP_PRIVATE_KEY }}" \
-            --save-config --dry-run=client -o yaml | kubectl apply -f -
+            --save-config --dry-run=client -o yaml | kubectl apply --wait -f -
           
-          helm upgrade --install benzene-ubuntu oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-            --version ${{ vars.ARC_VERSION }} \
-            -n arc-runners \
-            -f arc/runner.yaml \
-            --set maxRunners=${{ vars.MAX_RUNNERS }} \
-            --set minRunners=${{ vars.MIN_RUNNERS }} \
+          helm upgrade --install runners argocd-apps \
+            --repo https://argoproj.github.io/argo-helm \
+            --version 2.0.0 \
+            -n argocd --create-namespace \
+            -f argo-cd/applications/runners.yaml \
+            --set "applicationsets[0].template.spec.sources[0].targetRevision=${{ vars.ARC_VERSION }}" \
             --wait
+          argocd app wait -l app.kubernetes.io/component=arc-runner \
+            --timeout 300
