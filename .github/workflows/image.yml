@@ -5,13 +5,13 @@ on:
     branches:
       - "main"
     paths:
-      - ".github/workflows/build_image.yml"
+      - ".github/workflows/image.yml"
       - "runner/Dockerfile"
   pull_request:
     branches:
       - "main"
     paths:
-      - ".github/workflows/build_image.yml"
+      - ".github/workflows/image.yml"
       - "runner/Dockerfile"
   schedule:
     - cron: "30 6 1 * *"
@@ -23,6 +23,9 @@ concurrency:
 jobs:
   Build:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_FILE: ${{ github.workspace }}/runner/Dockerfile
+      IMAGE_NAME: github-runner
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +40,7 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/github-runner
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=schedule,pattern=${{ github.ref_name }}
             type=ref,event=branch
@@ -46,8 +49,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ github.workspace }}/runner/Dockerfile
-          tags: github-runner:latest
+          file: ${{ env.DOCKER_FILE }}
+          tags: ${{ env.IMAGE_NAME }}:latest
           load: true
           pull: true
           cache-to: type=gha,ignore-error=true
@@ -56,7 +59,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.18.0
         with:
-          image-ref: github-runner:latest
+          image-ref: ${{ env.IMAGE_NAME }}:latest
           format: ${{ github.event_name != 'pull_request' && 'sarif' || 'table' }}
           output: ${{ github.event_name != 'pull_request' && 'trivy.sarif' || '' }}
 
@@ -79,6 +82,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ github.workspace }}/runner/Dockerfile
+          file: ${{ env.DOCKER_FILE }}
           tags: ${{ steps.metadata.outputs.tags }}
           push: true
