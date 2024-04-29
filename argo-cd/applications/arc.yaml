@@ -1,5 +1,5 @@
 applications:
-  - name: arc
+  arc:
     namespace: argocd
     finalizers:
       - resources-finalizer.argocd.argoproj.io
