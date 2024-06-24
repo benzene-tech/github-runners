@@ -43,7 +43,7 @@ jobs:
             type=ref,event=branch
 
       - name: Build image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: '{{defaultContext}}:runner'
           tags: ${{ env.IMAGE_NAME }}:latest
@@ -75,7 +75,7 @@ jobs:
 
       - name: Push image
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: '{{defaultContext}}:runner'
           tags: ${{ steps.metadata.outputs.tags }}
