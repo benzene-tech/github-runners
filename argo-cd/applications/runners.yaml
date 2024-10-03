@@ -22,6 +22,7 @@ applicationsets:
           syncOptions:
             - CreateNamespace=true
             - ApplyOutOfSyncOnly=true
+            - PruneLast=true
         sources:
           - repoURL: ghcr.io/actions/actions-runner-controller-charts
             chart: gha-runner-scale-set

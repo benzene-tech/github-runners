@@ -10,8 +10,9 @@ applications:
         selfHeal: true
       syncOptions:
         - CreateNamespace=true
-        - ApplyOutOfSyncOnly=true
         - ServerSideApply=true
+        - ApplyOutOfSyncOnly=true
+        - PruneLast=true
     sources:
       - repoURL: ghcr.io/actions/actions-runner-controller-charts
         chart: gha-runner-scale-set-controller
